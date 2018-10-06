@@ -1,0 +1,9 @@
+[package]
+name = "roog-vst"
+version = "0.1.0"
+authors = ["Veeti Haapsamo <veeti.haapsamo@gmail.com>"]
+publish = false
+
+[dependencies]
+cpal = "0.8.2"
+roog = { path = "../roog/" }
