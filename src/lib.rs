@@ -19,7 +19,7 @@ fn midi_pitch_to_freq(pitch: u8) -> f64 {
 struct RoogVST {
   sample_rate: f64,
   time: f64,
-  synth: roog::MonoSynth,
+  synth: roog::PolySynth,
 }
 
 impl RoogVST {
@@ -51,7 +51,7 @@ impl Default for RoogVST {
     RoogVST {
       sample_rate: 44100.0,
       time: 0.0,
-      synth: roog::MonoSynth::new(),
+      synth: roog::PolySynth::new(),
     }
   }
 }
