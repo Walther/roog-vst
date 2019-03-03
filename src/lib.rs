@@ -6,7 +6,7 @@ extern crate vst;
 use vst::api::{Events, Supported};
 use vst::buffer::AudioBuffer;
 use vst::event::Event;
-use vst::plugin::{CanDo, Category, Info, Plugin};
+use vst::plugin::{CanDo, Category, Info, Plugin, PluginParameters};
 
 fn midi_pitch_to_freq(pitch: u8) -> f64 {
   const A4_PITCH: i8 = 69;
@@ -44,6 +44,10 @@ impl RoogVST {
   fn time_per_sample(&self) -> f64 {
     1.0 / self.sample_rate
   }
+
+  fn get_parameter(&self, index: i32) -> f32 {
+    return self.synth.get_parameter(index) as f32;
+  }
 }
 
 impl Default for RoogVST {
@@ -56,26 +60,12 @@ impl Default for RoogVST {
   }
 }
 
-impl Plugin for RoogVST {
-  fn get_info(&self) -> Info {
-    Info {
-      name: "roog".to_string(),
-      vendor: "Walther".to_string(),
-      unique_id: 65535,
-      category: Category::Synth,
-      inputs: 2,
-      outputs: 2,
-      parameters: 8,
-      initial_delay: 0,
-      ..Info::default()
-    }
-  }
-
+impl PluginParameters for RoogVST {
   fn get_parameter(&self, index: i32) -> f32 {
     return self.synth.get_parameter(index) as f32;
   }
 
-  fn set_parameter(&mut self, index: i32, val: f32) {
+  fn set_parameter(&self, index: i32, val: f32) {
     self.synth.set_parameter(index, val as f64);
   }
 
@@ -95,7 +85,24 @@ impl Plugin for RoogVST {
       6 => "Sustain",
       7 => "Release",
       _ => "",
-    }.to_string()
+    }
+    .to_string()
+  }
+}
+
+impl Plugin for RoogVST {
+  fn get_info(&self) -> Info {
+    Info {
+      name: "roog".to_string(),
+      vendor: "Walther".to_string(),
+      unique_id: 65535,
+      category: Category::Synth,
+      inputs: 2,
+      outputs: 2,
+      parameters: 8,
+      initial_delay: 0,
+      ..Info::default()
+    }
   }
 
   fn process_events(&mut self, events: &Events) {
