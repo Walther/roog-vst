@@ -6,7 +6,6 @@ publish = false
 edition = "2018"
 
 [dependencies]
-cpal = "0.8.2"
 roog = { path = "../roog/" }
 # vst = "*"
 vst = { git = "https://github.com/askeksa/rust-vst", branch = "thread_safe_plugin" }
