@@ -3,6 +3,9 @@ extern crate roog;
 #[macro_use]
 extern crate vst;
 
+mod atomic_float;
+use atomic_float::AtomicFloat;
+use std::sync::Arc;
 use vst::api::{Events, Supported};
 use vst::buffer::AudioBuffer;
 use vst::event::Event;
@@ -20,6 +23,36 @@ struct RoogVST {
   sample_rate: f64,
   time: f64,
   synth: roog::PolySynth,
+  params: Arc<RoogParams>,
+}
+
+struct RoogParams {
+  saw_intensity: AtomicFloat,
+  sin_intensity: AtomicFloat,
+  square_intensity: AtomicFloat,
+  triangle_intensity: AtomicFloat,
+
+  attack: AtomicFloat,
+  decay: AtomicFloat,
+  sustain: AtomicFloat,
+  release: AtomicFloat,
+}
+
+impl Default for RoogParams {
+  fn default() -> RoogParams {
+    RoogParams {
+      // wave
+      saw_intensity: AtomicFloat::new(0.0),
+      sin_intensity: AtomicFloat::new(0.2),
+      square_intensity: AtomicFloat::new(0.2),
+      triangle_intensity: AtomicFloat::new(0.2),
+      // adsr
+      attack: AtomicFloat::new(0.0),
+      decay: AtomicFloat::new(0.0),
+      sustain: AtomicFloat::new(1.0),
+      release: AtomicFloat::new(0.0),
+    }
+  }
 }
 
 impl RoogVST {
@@ -44,10 +77,6 @@ impl RoogVST {
   fn time_per_sample(&self) -> f64 {
     1.0 / self.sample_rate
   }
-
-  fn get_parameter(&self, index: i32) -> f32 {
-    return self.synth.get_parameter(index) as f32;
-  }
 }
 
 impl Default for RoogVST {
@@ -56,21 +85,44 @@ impl Default for RoogVST {
       sample_rate: 44100.0,
       time: 0.0,
       synth: roog::PolySynth::new(),
+      params: Arc::new(RoogParams::default()),
     }
   }
 }
 
-impl PluginParameters for RoogVST {
+impl PluginParameters for RoogParams {
   fn get_parameter(&self, index: i32) -> f32 {
-    return self.synth.get_parameter(index) as f32;
+    match index {
+      0 => self.saw_intensity.get(),
+      1 => self.sin_intensity.get(),
+      2 => self.square_intensity.get(),
+      3 => self.triangle_intensity.get(),
+
+      4 => self.attack.get(),
+      5 => self.decay.get(),
+      6 => self.sustain.get(),
+      7 => self.release.get(),
+      _ => 0.0,
+    }
   }
 
   fn set_parameter(&self, index: i32, val: f32) {
-    self.synth.set_parameter(index, val as f64);
+    match index {
+      0 => self.saw_intensity.set(val),
+      1 => self.sin_intensity.set(val),
+      2 => self.square_intensity.set(val),
+      3 => self.triangle_intensity.set(val),
+
+      4 => self.attack.set(val),
+      5 => self.decay.set(val),
+      6 => self.sustain.set(val),
+      7 => self.release.set(val),
+      _ => (),
+    };
   }
 
   fn get_parameter_text(&self, index: i32) -> String {
-    return format!("{:.6}", self.synth.get_parameter(index));
+    return format!("{:.6}", self.get_parameter(index));
   }
 
   fn get_parameter_name(&self, index: i32) -> String {
@@ -105,6 +157,10 @@ impl Plugin for RoogVST {
     }
   }
 
+  fn get_parameter_object(&mut self) -> Arc<PluginParameters> {
+    Arc::clone(&self.params) as Arc<PluginParameters>
+  }
+
   fn process_events(&mut self, events: &Events) {
     for event in events.events() {
       match event {
@@ -120,6 +176,13 @@ impl Plugin for RoogVST {
   }
 
   fn process(&mut self, buffer: &mut AudioBuffer<f32>) {
+    // Check if parameters have been changed, propagate accordingly
+    for index in 0..8 {
+      let param_value = self.params.get_parameter(index);
+      self.synth.set_parameter(index, param_value as f64);
+    }
+
+    // Process audio
     let samples = buffer.samples();
     let per_sample = self.time_per_sample();
 
@@ -127,7 +190,7 @@ impl Plugin for RoogVST {
       let mut time = self.time;
 
       for (_, output_sample) in input_buffer.iter().zip(output_buffer) {
-        let mut mix = self.synth.get_sample(time);
+        let mix = self.synth.get_sample(time);
 
         *output_sample = mix as f32;
         time += per_sample;
