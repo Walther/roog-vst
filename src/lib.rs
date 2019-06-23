@@ -3,13 +3,12 @@ extern crate roog;
 #[macro_use]
 extern crate vst;
 
-mod atomic_float;
-use atomic_float::AtomicFloat;
 use std::sync::Arc;
 use vst::api::{Events, Supported};
 use vst::buffer::AudioBuffer;
 use vst::event::Event;
 use vst::plugin::{CanDo, Category, Info, Plugin, PluginParameters};
+use vst::util::AtomicFloat;
 
 fn midi_pitch_to_freq(pitch: u8) -> f64 {
   const A4_PITCH: i8 = 69;
