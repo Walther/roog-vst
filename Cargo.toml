@@ -7,8 +7,7 @@ edition = "2018"
 
 [dependencies]
 roog = { path = "../roog/" }
-# vst = "*"
-vst = { git = "https://github.com/askeksa/rust-vst", branch = "thread_safe_plugin" }
+vst = { git = "https://github.com/rustaudio/vst-rs" }
 
 [lib]
 name = "roogvst"
